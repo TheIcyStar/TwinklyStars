@@ -8,8 +8,19 @@
 	
 	
 	Part of TwinklyStars
-	All configuration variables are in Stars.ini
-	This script handles the placement and twinkling of all of the stars.
+	This is an alternative script that has a bug in it, but the twinkling effect was interesting so I kept it
+	for those who are interested and like to poke around with scripts.
+	If you'd like to use this, change this in the .ini file:
+	
+	[MeasureScript]
+	Measure=Script
+	ScriptFile=Twinkler.lua
+	
+	to this:
+	
+	[MeasureScript]
+	Measure=Script
+	ScriptFile=Twinkler_Odd.lua
 --]]
 local particleTable = {}
 local tints = {}
@@ -118,33 +129,17 @@ function Update()
 	for i,v in pairs(particleTable) do
 		if not v.static then
 		
-		
-			--[[
-				A quick note to the adventerures who are looking through my code:
-				This is the part that determines how bright each star will be. This script uses the linear() tweening function that can
-				be found on the top of the script. If you want to mess around with the math that creates the twinkle effect,
-				here's a collection from github of a wide variety of tweening functions, which are already written in lua.
-				Enjoy!
-				
-				https://github.com/kikito/tween.lua/blob/master/tween.lua
-			--]]
-			
 			--main twinkling code
 			local newBrightness
-		
+			
 			if v.twinkleOffset < framesPerCycleDiv2 then
 				--wrapped offset
 				if timer >= v.twinkleOffset and timer < v.twinkleOffset + framesPerCycleDiv2 then
-					newBrightness = linear(timer - v.twinkleOffset, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
-					
-				elseif timer >= v.twinkleOffset + framesPerCycleDiv2 then
-					local fixedTimer = timer - v.twinkleOffset - framesPerCycleDiv2
-					newBrightness = linear(fixedTimer, v.maxBrightness, v.minBrightness, framesPerCycleDiv2)
-					
+					newBrightness = linear(timer, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
 				else
-					local fixedTimer = framesPerCycleDiv2 - v.twinkleOffset + timer + 1
+					local fixedTimer = timer - v.twinkleOffset - framesPerCycleDiv2
 					if fixedTimer < 0 then
-						fixedTimer = (fixedTimer * -1)
+						fixedTimer = fixedTimer * -1 + 1
 					end
 					newBrightness = linear(fixedTimer, v.maxBrightness, v.minBrightness, framesPerCycleDiv2)
 					
@@ -161,13 +156,21 @@ function Update()
 			end
 			
 			
-			--apply values
+			--[ apply values
 			if tintsActive then
 				SKIN:Bang("!SetOption", v.name, "ImageTint", v.tint..","..newBrightness)
 			else
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,255,255,"..newBrightness)
 			end
-
+			--]]
+			--[[ debug
+			if disc then
+				SKIN:Bang("!SetOption", v.name, "ImageTint", "0,255,0,"..newBrightness)
+			else
+				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,0,0,"..newBrightness)
+			end
+			--]]
+			
 		end
 	end
 	
