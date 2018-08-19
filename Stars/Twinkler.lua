@@ -1,7 +1,6 @@
 --[[
    |--------------------------------------------|
-   |	   TheIcyStar's snowing script			|
-   |	 	    Realistic  version				|
+   |     TheIcyStar's twinkling star script     |
    |--------------------------------------------|
    	BTC: 1GvHH4SXiMtyCGJ3iLtXEcBmFVM4Lc37ze
 	
@@ -10,7 +9,6 @@
 	All configuration variables are in Stars.ini
 	
 	This script handles the placement and twinkling of all of the stars.
-		
 --]]
 local particleTable = {}
 local tints = {}
@@ -24,13 +22,13 @@ function linear(t,b,_c,d)
 end
 
 
---Aquires variables and skins on refresh
+--Aquires variables and variables on refresh
 function Initialize()
 	UpdateRate = tonumber(SKIN:GetVariable("UpdateRate"))
 	NumStars = tonumber(SKIN:GetVariable("NumStars"))
 	RandomSeed = tonumber(SKIN:GetVariable("RandomSeed"))
 	TwinkleFrequency = tonumber(SKIN:GetVariable("TwinkleFrequency"))
-	--TwinkleVariation = tonumber(SKIN:GetVariable("TwinkleVariation"))
+	--TwinkleVariation = tonumber(SKIN:GetVariable("TwinkleVariation")) --decided that having less variation wouldn't be good, if somebody wants this I can easily add it in though
 	StaticStarChance = tonumber(SKIN:GetVariable("StaticStarChance"))
 	StartX = tonumber(SKIN:GetVariable("StartX"))
 	EndX = tonumber(SKIN:GetVariable("EndX"))
@@ -46,6 +44,7 @@ function Initialize()
 	--Variables used for timing and other things
 	fps = 1000/UpdateRate
 	framesPerCycle = TwinkleFrequency*fps
+	framesPerCycleDiv2 = framesPerCycle/2 --performance boost in the main update loop?? doubt it but this won't hurt
 	
 	
 	--random seed set
@@ -62,7 +61,7 @@ function Initialize()
 		tintsActive = true
 	end
 	
-	--Acquires Meters, creates snowflake objects
+	--Acquires Meters, creates particle objects
 	for i=1,NumStars do
 		local newMeter = {
 			["meter"] = SKIN:GetMeter("MeterStar"..i),
@@ -75,7 +74,7 @@ function Initialize()
 			["twinkleOffset"] = 0,
 		}
 		
-		--set values for the meter
+		--set values for the meter object
 		newMeter.size = math.random(MinSize,MaxSize)
 		if tintsActive then
 			newMeter.tint = tints[math.random(1,#tints)]
@@ -86,8 +85,6 @@ function Initialize()
 		newMeter.minBrightness = math.random(MinTransparency, MaxTransparency)
 		newMeter.maxBrightness = TwinkleTransparency --maybe make this a range later?
 		newMeter.twinkleOffset = math.random(0,framesPerCycle)
-		--temp
-		newMeter.twinkleOffset = 35
 		
 		
 		--apply values for meter
@@ -108,71 +105,43 @@ function Initialize()
 end
 
 
-local timer = 1 --used for snowflake spawn delays
+local timer = 1
 function Update()
 
 	for i,v in pairs(particleTable) do
 		if not v.static then
 			--main twinkling code
 			local newBrightness
-			
-			local db
-			if v.name == "MeterStar1" then
-			
-				db = true
-			end
-			
 			local disc
-			--if v.twinkleOffset + (framesPerCycle / 2) > framesPerCycle then
 			if v.twinkleOffset < (framesPerCycle / 2) then
-			disc = true --left off: fixing overwraps, debug code a plenty
+			disc = true
 				--wrapped offset
-				if timer >= v.twinkleOffset and timer < v.twinkleOffset + (framesPerCycle / 2) then
-					newBrightness = linear(timer, v.minBrightness, v.maxBrightness, framesPerCycle / 2)
-					
-					if db then 
-						print("A") 
-						print("Timer: "..timer.." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
-					end
+				if timer >= v.twinkleOffset and timer < v.twinkleOffset + framesPerCycleDiv2 then
+					newBrightness = linear(timer, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
 				else
-					newBrightness = linear(timer - v.twinkleOffset - (framesPerCycle/2), v.maxBrightness, v.minBrightness, framesPerCycle / 2) 
-					
-					if db then 
-						print("B") 
-						print("Timer: "..timer - v.twinkleOffset - (framesPerCycle/2).." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
-					end
+					newBrightness = linear(timer - v.twinkleOffset - framesPerCycleDiv2, v.maxBrightness, v.minBrightness, framesPerCycleDiv2) 
 				end
 				
 			else
 			disc = false
 				--standard
-				if timer < (v.twinkleOffset + (framesPerCycle / 2)) % framesPerCycle or timer >= v.twinkleOffset then
-					newBrightness = linear((timer - v.twinkleOffset)% framesPerCycle, v.minBrightness, v.maxBrightness, framesPerCycle / 2)
-					
-					if db then
-						print("C")
-						print("Timer: "..(timer - v.twinkleOffset)% framesPerCycle.." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
-					end
+				if timer < (v.twinkleOffset + framesPerCycleDiv2) % framesPerCycle or timer >= v.twinkleOffset then
+					newBrightness = linear((timer - v.twinkleOffset)% framesPerCycle, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
 				else
-					newBrightness = linear(((timer - v.twinkleOffset - (framesPerCycle/2))% framesPerCycle), v.maxBrightness, v.minBrightness, framesPerCycle / 2)
-					
-					if db then
-						print("D")
-						print("Timer: "..((timer - v.twinkleOffset - (framesPerCycle/2))% framesPerCycle).." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
-					end
+					newBrightness = linear(((timer - v.twinkleOffset - framesPerCycleDiv2)% framesPerCycle), v.maxBrightness, v.minBrightness, framesPerCycleDiv2)
 				end
 				
 			end
 			
 			
-			--[[apply values
+			--[[ apply values
 			if tintsActive then
 				SKIN:Bang("!SetOption", v.name, "ImageTint", v.tint..","..newBrightness)
 			else
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,255,255,"..newBrightness)
 			end
 			--]]
-			--[debug
+			--[ debug
 			if disc then
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "0,255,0,"..newBrightness)
 			else
