@@ -2,12 +2,13 @@
    |--------------------------------------------|
    |     TheIcyStar's twinkling star script     |
    |--------------------------------------------|
+   
+	Tips aren't expected, but greatly appreciated. Thanks!
    	BTC: 1GvHH4SXiMtyCGJ3iLtXEcBmFVM4Lc37ze
 	
+	
 	Part of TwinklyStars
-	
 	All configuration variables are in Stars.ini
-	
 	This script handles the placement and twinkling of all of the stars.
 --]]
 local particleTable = {}
@@ -39,12 +40,13 @@ function Initialize()
 	MaxSize = tonumber(SKIN:GetVariable("MaxSize"))
 	MinTransparency = tonumber(SKIN:GetVariable("MinTransparency"))
 	MaxTransparency = tonumber(SKIN:GetVariable("MaxTransparency"))
-	TwinkleTransparency = tonumber(SKIN:GetVariable("TwinkleTransparency"))
+	TwinkleTransparencyMin = tonumber(SKIN:GetVariable("TwinkleTransparencyMin"))
+	TwinkleTransparencyMax = tonumber(SKIN:GetVariable("TwinkleTransparencyMax"))
 	
 	--Variables used for timing and other things
 	fps = 1000/UpdateRate
 	framesPerCycle = TwinkleFrequency*fps
-	framesPerCycleDiv2 = framesPerCycle/2 --performance boost in the main update loop?? doubt it but this won't hurt
+	framesPerCycleDiv2 = math.floor(framesPerCycle/2) --performance boost & a bug fix if I do this here instead of in the update loop
 	
 	
 	--random seed set
@@ -52,7 +54,7 @@ function Initialize()
 		math.randomseed(RandomSeed)
 	end
 
-
+	--tint list setup
 	NumImageTints = tonumber(SKIN:GetVariable("NumImageTints"))
 	if NumImageTints ~= 0 then
 		for i=1,NumImageTints do
@@ -83,8 +85,13 @@ function Initialize()
 			newMeter.static = true
 		end
 		newMeter.minBrightness = math.random(MinTransparency, MaxTransparency)
-		newMeter.maxBrightness = TwinkleTransparency --maybe make this a range later?
+		newMeter.maxBrightness = math.random(TwinkleTransparencyMin, TwinkleTransparencyMax)
 		newMeter.twinkleOffset = math.random(0,framesPerCycle)
+		
+		--math is weird. Here's a fix to avoid a dumb bug
+		if newMeter.twinkleOffset == framesPerCycleDiv2 then
+			newMeter.twinkleOffset = newMeter.twinkleOffset - 1
+		end --this also could have been in a "repeat x until y" loop, oh whatever
 		
 		
 		--apply values for meter
@@ -110,20 +117,29 @@ function Update()
 
 	for i,v in pairs(particleTable) do
 		if not v.static then
+		
 			--main twinkling code
 			local newBrightness
-			local disc
-			if v.twinkleOffset < (framesPerCycle / 2) then
-			disc = true
+			
+			if v.twinkleOffset < framesPerCycleDiv2 then
 				--wrapped offset
 				if timer >= v.twinkleOffset and timer < v.twinkleOffset + framesPerCycleDiv2 then
-					newBrightness = linear(timer, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
+					newBrightness = linear(timer - v.twinkleOffset, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
+					
+				elseif timer >= v.twinkleOffset + framesPerCycleDiv2 then
+					local fixedTimer = timer - v.twinkleOffset - framesPerCycleDiv2
+					newBrightness = linear(fixedTimer, v.maxBrightness, v.minBrightness, framesPerCycleDiv2)
+					
 				else
-					newBrightness = linear(timer - v.twinkleOffset - framesPerCycleDiv2, v.maxBrightness, v.minBrightness, framesPerCycleDiv2) 
+					local fixedTimer = framesPerCycleDiv2 - v.twinkleOffset + timer + 1
+					if fixedTimer < 0 then
+						fixedTimer = (fixedTimer * -1)
+					end
+					newBrightness = linear(fixedTimer, v.maxBrightness, v.minBrightness, framesPerCycleDiv2)
+					
 				end
 				
 			else
-			disc = false
 				--standard
 				if timer < (v.twinkleOffset + framesPerCycleDiv2) % framesPerCycle or timer >= v.twinkleOffset then
 					newBrightness = linear((timer - v.twinkleOffset)% framesPerCycle, v.minBrightness, v.maxBrightness, framesPerCycleDiv2)
@@ -134,25 +150,17 @@ function Update()
 			end
 			
 			
-			--[[ apply values
+			--apply values
 			if tintsActive then
 				SKIN:Bang("!SetOption", v.name, "ImageTint", v.tint..","..newBrightness)
 			else
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,255,255,"..newBrightness)
 			end
-			--]]
-			--[ debug
-			if disc then
-				SKIN:Bang("!SetOption", v.name, "ImageTint", "0,255,0,"..newBrightness)
-			else
-				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,0,0,"..newBrightness)
-			end
-			--]]
-			
+
 		end
 	end
 	
 	
 	--timer stuff
-	timer = (timer + 1) % (framesPerCycle)
+	timer = math.floor((timer + 1) % (framesPerCycle))
 end
