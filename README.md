@@ -17,7 +17,7 @@ nust be the same as the number of **[MeterStarN]** s. If you have NumStars set t
 #### StarAntiAlias
 Set to 1 to enable anti aliasing
 
-#### otalScreenAreaX, otalScreenAreaY
+#### TotalScreenAreaX, TotalScreenAreaY
 Set to your screen resolution. For a 1080p monitor, set X to 1920 and Y to 1080.
 
 #### RandomSeed
