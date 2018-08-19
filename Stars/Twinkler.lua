@@ -86,6 +86,8 @@ function Initialize()
 		newMeter.minBrightness = math.random(MinTransparency, MaxTransparency)
 		newMeter.maxBrightness = TwinkleTransparency --maybe make this a range later?
 		newMeter.twinkleOffset = math.random(0,framesPerCycle)
+		--temp
+		newMeter.twinkleOffset = 35
 		
 		
 		--apply values for meter
@@ -117,21 +119,28 @@ function Update()
 			local db
 			if v.name == "MeterStar1" then
 			
-			print("AB: "..timer - v.twinkleOffset.." CD: "..(timer - v.twinkleOffset)% framesPerCycle)
-			db = true
+				db = true
 			end
 			
 			local disc
 			--if v.twinkleOffset + (framesPerCycle / 2) > framesPerCycle then
 			if v.twinkleOffset < (framesPerCycle / 2) then
-			disc = true
+			disc = true --left off: fixing overwraps, debug code a plenty
 				--wrapped offset
 				if timer >= v.twinkleOffset and timer < v.twinkleOffset + (framesPerCycle / 2) then
 					newBrightness = linear(timer, v.minBrightness, v.maxBrightness, framesPerCycle / 2)
-					if db then print("A") end
+					
+					if db then 
+						print("A") 
+						print("Timer: "..timer.." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
+					end
 				else
-					newBrightness = linear(timer - v.twinkleOffset, v.maxBrightness, v.minBrightness, framesPerCycle / 2) --overwraps here
-					if db then print("B") end
+					newBrightness = linear(timer - v.twinkleOffset - (framesPerCycle/2), v.maxBrightness, v.minBrightness, framesPerCycle / 2) 
+					
+					if db then 
+						print("B") 
+						print("Timer: "..timer - v.twinkleOffset - (framesPerCycle/2).." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
+					end
 				end
 				
 			else
@@ -139,13 +148,22 @@ function Update()
 				--standard
 				if timer < (v.twinkleOffset + (framesPerCycle / 2)) % framesPerCycle or timer >= v.twinkleOffset then
 					newBrightness = linear((timer - v.twinkleOffset)% framesPerCycle, v.minBrightness, v.maxBrightness, framesPerCycle / 2)
-					if db then print("C") end
+					
+					if db then
+						print("C")
+						print("Timer: "..(timer - v.twinkleOffset)% framesPerCycle.." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
+					end
 				else
-					newBrightness = linear(((timer - v.twinkleOffset)% framesPerCycle) - v.twinkleOffset, v.maxBrightness, v.minBrightness, framesPerCycle / 2)
-					if db then print("D") end
+					newBrightness = linear(((timer - v.twinkleOffset - (framesPerCycle/2))% framesPerCycle), v.maxBrightness, v.minBrightness, framesPerCycle / 2)
+					
+					if db then
+						print("D")
+						print("Timer: "..((timer - v.twinkleOffset - (framesPerCycle/2))% framesPerCycle).." minBright: "..v.minBrightness.." maxBright: "..v.maxBrightness.." framesperCycle: "..(framesPerCycle/2).." Result: "..newBrightness)
+					end
 				end
 				
 			end
+			
 			
 			--[[apply values
 			if tintsActive then
@@ -154,8 +172,7 @@ function Update()
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "255,255,255,"..newBrightness)
 			end
 			--]]
-			--[
-			--debug
+			--[debug
 			if disc then
 				SKIN:Bang("!SetOption", v.name, "ImageTint", "0,255,0,"..newBrightness)
 			else
